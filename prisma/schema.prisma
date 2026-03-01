@@ -1,0 +1,120 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  watchlist  Watchlist[]
+  alerts     Alert[]
+  alertRules AlertRule[]
+}
+
+model Category {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  slug      String   @unique
+  createdAt DateTime @default(now())
+
+  products  Product[]
+}
+
+model Product {
+  id            Int       @id @default(autoincrement())
+  name          String
+  url           String
+
+  // ✅ NEW: ảnh
+  imageUrl      String?
+
+  // ✅ tiền: VND dạng số nguyên (vd 329000)
+  price         Int?
+  createdAt     DateTime  @default(now())
+  lastCheckedAt DateTime?
+
+  // ✅ NEW: rating (1..5) + count
+  rating        Float?
+  ratingCount   Int?
+
+  // ✅ NEW: phân loại
+  categoryId    Int?
+  category      Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  watchlist      Watchlist[]
+  priceHistories PriceHistory[]
+  alerts         Alert[]
+  alertRules     AlertRule[]
+
+  @@index([lastCheckedAt])
+  @@index([categoryId])
+}
+
+model Alert {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  productId Int
+
+  // ✅ tiền: VND int
+  oldPrice  Int
+  newPrice  Int
+  createdAt DateTime @default(now())
+  isRead    Boolean  @default(false)
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([productId, createdAt])
+}
+
+model AlertRule {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  productId   Int
+
+  // ✅ tiền: VND int
+  targetPrice Int
+  isActive    Boolean  @default(true)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId], name: "rule_user_product")
+  @@index([productId, isActive])
+}
+
+model PriceHistory {
+  id        Int      @id @default(autoincrement())
+  productId Int
+  // ✅ tiền: VND int
+  price     Int
+  createdAt DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, createdAt])
+}
+
+model Watchlist {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  productId Int
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId], name: "watchlist_user_product")
+}

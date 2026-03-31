@@ -1,5 +1,4 @@
-// price-tracker-backend/src/alerts/alerts.service.ts
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateAlertDto } from './dto/create-alert.dto';
 
@@ -7,7 +6,6 @@ import { CreateAlertDto } from './dto/create-alert.dto';
 export class AlertsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  // === Notifications (UI tab Alerts) ===
   getMyAlerts(userId: number) {
     return this.prisma.alert.findMany({
       where: { userId },
@@ -34,48 +32,40 @@ export class AlertsService {
     });
   }
 
-  // delete notification
   remove(userId: number, alertId: number) {
     return this.prisma.alert.deleteMany({
       where: { id: alertId, userId },
     });
   }
 
-  // === Rules (UI Create Alert = tạo rule) ===
   async createRule(userId: number, dto: CreateAlertDto) {
     const product = await this.prisma.product.findUnique({
       where: { id: dto.productId },
       select: { id: true },
     });
+
     if (!product) throw new BadRequestException('Product not found');
 
-    try {
-      return await this.prisma.alertRule.create({
-        data: {
-          userId,
-          productId: dto.productId,
-          targetPrice: dto.targetPrice,
-          isActive: true,
-        },
-        include: {
-          product: {
-            select: {
-              id: true,
-              name: true,
-              url: true,
-              imageUrl: true,
-              rating: true,
-              ratingCount: true,
-            },
+    return this.prisma.alertRule.create({
+      data: {
+        userId,
+        productId: dto.productId,
+        targetPrice: dto.targetPrice,
+        isActive: true,
+      },
+      include: {
+        product: {
+          select: {
+            id: true,
+            name: true,
+            url: true,
+            imageUrl: true,
+            rating: true,
+            ratingCount: true,
           },
         },
-      });
-    } catch (e: any) {
-      if (String(e?.code) === 'P2002') {
-        throw new BadRequestException('Rule already exists for this product');
-      }
-      throw e;
-    }
+      },
+    });
   }
 
   getMyRules(userId: number) {
@@ -94,6 +84,33 @@ export class AlertsService {
           },
         },
       },
+    });
+  }
+
+  async toggleRule(userId: number, ruleId: number) {
+    const rule = await this.prisma.alertRule.findFirst({
+      where: { id: ruleId, userId },
+      select: { id: true, isActive: true },
+    });
+
+    if (!rule) throw new NotFoundException('Rule not found');
+
+    return this.prisma.alertRule.update({
+      where: { id: ruleId },
+      data: { isActive: !rule.isActive },
+    });
+  }
+
+  async deleteRule(userId: number, ruleId: number) {
+    const rule = await this.prisma.alertRule.findFirst({
+      where: { id: ruleId, userId },
+      select: { id: true },
+    });
+
+    if (!rule) throw new NotFoundException('Rule not found');
+
+    return this.prisma.alertRule.delete({
+      where: { id: ruleId },
     });
   }
 }

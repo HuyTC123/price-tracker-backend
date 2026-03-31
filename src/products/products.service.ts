@@ -9,7 +9,6 @@ export class ProductsService {
 
   async create(dto: CreateProductDto) {
     return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      // nếu có categoryId thì check tồn tại
       if (dto.categoryId != null) {
         const cat = await tx.category.findUnique({
           where: { id: dto.categoryId },
@@ -21,9 +20,9 @@ export class ProductsService {
         data: {
           name: dto.name,
           url: dto.url,
-          imageUrl: dto.imageUrl, // ✅ NEW
+          imageUrl: dto.imageUrl,
           price: dto.price ?? null,
-          categoryId: dto.categoryId ?? null, // ✅ NEW
+          categoryId: dto.categoryId ?? null,
         },
         include: { category: true },
       });
@@ -41,9 +40,22 @@ export class ProductsService {
     });
   }
 
-  async findAll(filter?: { categoryId?: number }) {
+  async findAll(filter?: { categoryId?: number; search?: string }) {
+    const where: Prisma.ProductWhereInput | undefined = filter?.search
+      ? {
+          name: {
+            contains: filter.search,
+            mode: 'insensitive',
+          },
+        }
+      : filter?.categoryId
+      ? {
+          categoryId: filter.categoryId,
+        }
+      : undefined;
+
     return this.prisma.product.findMany({
-      where: filter?.categoryId ? { categoryId: filter.categoryId } : undefined,
+      where,
       orderBy: { id: 'desc' },
       include: { category: true },
     });

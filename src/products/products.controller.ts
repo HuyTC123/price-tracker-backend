@@ -1,21 +1,46 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import { ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { SetCategoryDto } from './dto/set-category.dto';
-import { UseGuards } from "@nestjs/common";
-import { ApiBearerAuth } from "@nestjs/swagger";
-import { JwtAuthGuard } from "../auth/jwt-auth.guard"; // chỉnh path cho đúng
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
-@ApiBearerAuth("bearer")
+@ApiBearerAuth('bearer')
 @UseGuards(JwtAuthGuard)
 @Controller('products')
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
   @Get()
-  findAll(@Query('categoryId') categoryId?: string) {
+  @ApiQuery({ name: 'categoryId', required: false, type: String })
+  @ApiQuery({ name: 'search', required: false, type: String })
+  findAll(
+    @Query('categoryId') categoryId?: string,
+    @Query('search') search?: string,
+  ) {
+    if (categoryId && search?.trim()) {
+      throw new BadRequestException(
+        'Chỉ được dùng search hoặc categoryId, không dùng cùng lúc',
+      );
+    }
+
     const id = categoryId ? Number(categoryId) : undefined;
-    return this.productsService.findAll({ categoryId: Number.isFinite(id) ? id : undefined });
+
+    return this.productsService.findAll({
+      categoryId: Number.isFinite(id) ? id : undefined,
+      search: search?.trim() || undefined,
+    });
   }
 
   @Post()
@@ -28,7 +53,6 @@ export class ProductsController {
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: SetCategoryDto,
   ) {
-    // dto.categoryId có thể undefined -> treat như null
     return this.productsService.setCategory(id, dto.categoryId ?? null);
   }
 }

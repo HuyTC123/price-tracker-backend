@@ -25,27 +25,20 @@ model Category {
   slug      String   @unique
   createdAt DateTime @default(now())
 
-  products  Product[]
+  products Product[]
 }
 
 model Product {
   id            Int       @id @default(autoincrement())
   name          String
   url           String
-
-  // ✅ NEW: ảnh
   imageUrl      String?
-
-  // ✅ tiền: VND dạng số nguyên (vd 329000)
   price         Int?
   createdAt     DateTime  @default(now())
   lastCheckedAt DateTime?
-
-  // ✅ NEW: rating (1..5) + count
   rating        Float?
   ratingCount   Int?
 
-  // ✅ NEW: phân loại
   categoryId    Int?
   category      Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
@@ -62,8 +55,6 @@ model Alert {
   id        Int      @id @default(autoincrement())
   userId    Int
   productId Int
-
-  // ✅ tiền: VND int
   oldPrice  Int
   newPrice  Int
   createdAt DateTime @default(now())
@@ -80,25 +71,21 @@ model AlertRule {
   id          Int      @id @default(autoincrement())
   userId      Int
   productId   Int
-
-  // ✅ tiền: VND int
   targetPrice Int
   isActive    Boolean  @default(true)
-
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, productId], name: "rule_user_product")
   @@index([productId, isActive])
+  @@index([userId, createdAt])
 }
 
 model PriceHistory {
   id        Int      @id @default(autoincrement())
   productId Int
-  // ✅ tiền: VND int
   price     Int
   createdAt DateTime @default(now())
 

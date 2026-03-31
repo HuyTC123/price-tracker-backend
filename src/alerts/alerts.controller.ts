@@ -10,7 +10,6 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-
 import { AlertsService } from './alerts.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
@@ -23,7 +22,7 @@ import { CreateAlertDto } from './dto/create-alert.dto';
 export class AlertsController {
   constructor(private readonly alertsService: AlertsService) {}
 
-  // UI section: "Alerts" (notifications)
+  // notifications
   @Get()
   getMyAlerts(@CurrentUser() user: any) {
     return this.alertsService.getMyAlerts(user.id);
@@ -37,7 +36,6 @@ export class AlertsController {
     return this.alertsService.markRead(user.id, id);
   }
 
-  // ✅ NEW: Delete notification (Alert)
   @Delete(':id')
   remove(
     @CurrentUser() user: any,
@@ -46,15 +44,30 @@ export class AlertsController {
     return this.alertsService.remove(user.id, id);
   }
 
-  // UI button: "Create Alert" -> tạo rule
-  @Post()
+  // rules
+  @Post('rules')
   createRule(@CurrentUser() user: any, @Body() dto: CreateAlertDto) {
     return this.alertsService.createRule(user.id, dto);
   }
 
-  // (tuỳ chọn) debug rules
   @Get('rules')
   getMyRules(@CurrentUser() user: any) {
     return this.alertsService.getMyRules(user.id);
+  }
+
+  @Patch('rules/:id/toggle')
+  toggleRule(
+    @CurrentUser() user: any,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.alertsService.toggleRule(user.id, id);
+  }
+
+  @Delete('rules/:id')
+  deleteRule(
+    @CurrentUser() user: any,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.alertsService.deleteRule(user.id, id);
   }
 }

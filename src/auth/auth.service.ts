@@ -1,15 +1,15 @@
 import { BadRequestException, Injectable, UnauthorizedException } from "@nestjs/common";
-import { JwtService } from "@nestjs/jwt";
-import * as bcrypt from "bcrypt";
-import { PrismaService } from "../prisma/prisma.service";
+import { JwtService } from "@nestjs/jwt";  // để tạo token
+import * as bcrypt from "bcrypt";  // để mã hóa mật khẩu 
+import { PrismaService } from "../prisma/prisma.service"; //để làm việc với database 
 import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
 
-@Injectable()
-export class AuthService {
-  constructor(private prisma: PrismaService, private jwt: JwtService) {}
+@Injectable() // để đánh dấu được là service có thể liên kết vào controller
+export class AuthService { 
+  constructor(private prisma: PrismaService, private jwt: JwtService) {} // đường dẫn kết nối tới database và hệ thống tạo bảo mật
 
-  private signToken(user: { id: number; email: string }) {
+  private signToken(user: { id: number; email: string }) { // khởi tạo hàm chỉ được dùng trong service này 
     const payload = { sub: user.id, email: user.email };
     return {
       access_token: this.jwt.sign(payload),
@@ -24,10 +24,10 @@ export class AuthService {
     if (!email || !password) throw new BadRequestException("Email & password are required");
     if (password.length < 6) throw new BadRequestException("Password must be at least 6 chars");
 
-    const exist = await this.prisma.user.findUnique({ where: { email } });
+    const exist = await this.prisma.user.findUnique({ where: { email } }); // chờ đợi cái này đi vào bảng user của database tìm đúng chỗ địa chỉ này 
     if (exist) throw new BadRequestException("Email already exists");
 
-    const hash = await bcrypt.hash(password, 10);
+    const hash = await bcrypt.hash(password, 10); // chờ cái thư viện mã hóa cái password thành chuỗi ký tự lạ 
 
     const user = await this.prisma.user.create({
       data: { email, password: hash },

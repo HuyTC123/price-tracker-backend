@@ -5,6 +5,7 @@ import { PriceFetcherService } from "./price-fetcher.service";
 
 @Injectable()
 export class PricesService {
+  // Logger: Công cụ để ghi lại nhật ký hoạt động của hệ thống, giúp theo dõi tiến độ Cron Job trong Terminal.
   private readonly logger = new Logger(PricesService.name);
 
   constructor(
@@ -27,14 +28,15 @@ export class PricesService {
     if (!product) throw new Error("Product not found");
 
     // ✅ fetch giá thật + rating
-    const info = await this.priceFetcher.fetchInfo(product.url);
+    
+    const info = await this.priceFetcher.fetchInfo(product.url); // ví dụ url là link shopee,tiki..
     const currentPrice = info.price;
 
     const last = await this.prisma.priceHistory.findFirst({
       where: { productId },
       orderBy: { createdAt: "desc" },
     });
-    const lastPrice = last?.price ?? null;
+    const lastPrice = last?.price ?? null;   // ?? gán tạm thời
 
     await this.prisma.product.update({
       where: { id: productId },
@@ -100,7 +102,7 @@ export class PricesService {
     return history;
   }
 
-  @Cron(CronExpression.EVERY_5_MINUTES)
+  @Cron(CronExpression.EVERY_10_MINUTES)
   async snapshotAllProducts() {
     this.logger.log("Cron snapshotAllProducts started");
 
